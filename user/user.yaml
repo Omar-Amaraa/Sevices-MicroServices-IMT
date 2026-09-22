@@ -156,14 +156,19 @@ components:
         id:
           type: string
           description: Unique string identifier
-          example: "usr-001"
+          example: "chris_rivers"
         name:
           type: string
           description: Full name of the user
-          example: "Karim Lamouri"
+          example: "Chris Rivers"
+        last_active:
+          type: integer
+          description: Unix timestamp of the user's last activity
+          example: 1360031010
       required:
         - id
         - name
+        - last_active
 
     Error:
       type: object
