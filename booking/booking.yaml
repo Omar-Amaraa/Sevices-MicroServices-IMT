@@ -1,0 +1,163 @@
+openapi: 3.0.3
+info:
+  title: Booking Service API
+  description: API for managing cinema reservations and retrieving detailed bookings via cross-service communication.
+  version: "1.0.0"
+  contact:
+    name: Helene Coullon
+    url: https://helene-coullon.fr/
+    email: helene.coullon@imt-atlantique.fr
+servers:
+  - url: http://localhost:3201
+    description: Local development server for Booking service
+
+tags:
+  - name: admin
+    description: Secured Admin-only calls
+  - name: client
+    description: Operations available to end-users
+
+paths:
+  /bookings:
+    get:
+      tags:
+        - admin
+      summary: Retrieve all bookings globally
+      description: Returns the hierarchical JSON list of all users and their reserved movie dates.
+      responses:
+        "200":
+          description: List of all bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserBookings"
+
+  /bookings/{userid}:
+    get:
+      tags:
+        - client
+      summary: Retrieve a user's standard bookings
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: User bookings found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserBookings"
+        "404":
+          description: No bookings found for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      tags:
+        - client
+      summary: Create a new booking
+      description: Verifies slot with the Schedule service before adding a movie UUID to a user's specific date.
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                  example: "20151201"
+                movieid:
+                  type: string
+                  example: "267eedb8-0f5d-42d5-8f43-72426b9fb3e6"
+              required:
+                - date
+                - movieid
+      responses:
+        "201":
+          description: Booking confirmed
+        "400":
+          description: Booking rejected (Schedule mismatch or duplicate)
+        "503":
+          description: Schedule service unreachable
+
+  /bookings/{userid}/details:
+    get:
+      tags:
+        - client
+      summary: Retrieve a user's detailed bookings
+      description: Fetches user bookings and aggregates metadata via REST calls to the Movie service.
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Detailed user bookings returned
+        "404":
+          description: User not found
+
+  /bookings/{userid}/{date}/{movieid}:
+    delete:
+      tags:
+        - client
+      summary: Cancel a booking
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: movieid
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Booking deleted successfully
+        "404":
+          description: Booking not found
+
+components:
+  parameters:
+    UserId:
+      name: userid
+      in: path
+      required: true
+      description: User identifier string
+      schema:
+        type: string
+
+  schemas:
+    UserBookings:
+      type: object
+      properties:
+        userid:
+          type: string
+          example: "chris_rivers"
+        dates:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                example: "20151201"
+              movies:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+                  example: "267eedb8-0f5d-42d5-8f43-72426b9fb3e6"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Error message details"
