@@ -1,0 +1,151 @@
+openapi: 3.0.3
+info:
+  title: Schedule Service API
+  description: API for managing cinema movie schedules.
+  version: "1.0.0"
+  contact:
+    name: Helene Coullon
+    url: https://helene-coullon.fr/
+    email: helene.coullon@imt-atlantique.fr
+servers:
+  - url: http://localhost:3202
+    description: Local development server for Schedule service
+
+tags:
+  - name: admin
+    description: Secured Admin-only calls
+  - name: dev
+    description: Operations available to regular developers
+
+paths:
+  /schedules:
+    get:
+      tags:
+        - dev
+      summary: Retrieve all schedules
+      description: Returns the list of all dates and their scheduled movies.
+      responses:
+        "200":
+          description: List of schedules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Schedule"
+
+  /schedules/{date}:
+    get:
+      tags:
+        - dev
+      summary: Retrieve a schedule by date
+      parameters:
+        - $ref: "#/components/parameters/Date"
+      responses:
+        "200":
+          description: Schedule found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Schedule"
+        "404":
+          description: No schedule found for this date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      tags:
+        - admin
+      summary: Add a new schedule
+      description: Creates a schedule for a specific date if one does not already exist.
+      parameters:
+        - $ref: "#/components/parameters/Date"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Schedule"
+      responses:
+        "201":
+          description: Schedule added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Schedule added"
+        "400":
+          description: Schedule for this date already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags:
+        - admin
+      summary: Delete a schedule
+      description: Removes an entire schedule entry for a specific date.
+      parameters:
+        - $ref: "#/components/parameters/Date"
+      responses:
+        "200":
+          description: Schedule deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Schedule deleted"
+        "404":
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  parameters:
+    Date:
+      name: date
+      in: path
+      required: true
+      description: The date of the schedule in YYYYMMDD format
+      schema:
+        type: string
+
+  schemas:
+    Schedule:
+      type: object
+      description: Representation of a daily movie schedule.
+      properties:
+        date:
+          type: string
+          description: Date string formatted as YYYYMMDD
+          example: "20151130"
+        movies:
+          type: array
+          description: List of movie UUIDs playing on this date
+          items:
+            type: string
+            format: uuid
+          example: 
+            - "720d006c-3a57-4b6a-b18f-9b713b073f3c"
+            - "a8034f44-aee4-44cf-b32c-74cf452aaaae"
+      required:
+        - date
+        - movies
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "No schedule found for this date"
