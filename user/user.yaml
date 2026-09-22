@@ -1,0 +1,173 @@
+openapi: 3.0.3
+info:
+  title: User Service API
+  description: API for authenticating and managing cinema users.
+  version: "1.0.0"
+  contact:
+    name: Helene Coullon
+    url: https://helene-coullon.fr/
+    email: helene.coullon@imt-atlantique.fr
+servers:
+  - url: http://localhost:3203
+    description: Local development server for User service
+
+tags:
+  - name: admin
+    description: Secured Admin-only calls
+  - name: dev
+    description: Operations available to regular developers
+
+paths:
+  /users:
+    get:
+      tags:
+        - dev
+      summary: Retrieve the full list of users
+      description: Returns the list of all registered users in the database.
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /users/{userid}:
+    get:
+      tags:
+        - dev
+      summary: Retrieve a user by their ID
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    post:
+      tags:
+        - admin
+      summary: Add a new user
+      description: Creates a new user entry if the ID does not already exist.
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "201":
+          description: User added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User added"
+        "400":
+          description: User ID already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      tags:
+        - admin
+      summary: Update a user's details
+      description: Modifies an existing user's information.
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags:
+        - admin
+      summary: Delete a user
+      description: Removes a user from the database.
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User deleted"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  parameters:
+    UserId:
+      name: userid
+      in: path
+      required: true
+      description: Unique identifier of the user
+      schema:
+        type: string
+
+  schemas:
+    User:
+      type: object
+      description: Representation of a user in the cinema system.
+      properties:
+        id:
+          type: string
+          description: Unique string identifier
+          example: "usr-001"
+        name:
+          type: string
+          description: Full name of the user
+          example: "Karim Lamouri"
+      required:
+        - id
+        - name
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "User not found"
