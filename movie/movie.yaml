@@ -100,6 +100,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+    delete:
+      tags:
+        - admin
+      summary: Delete a movie
+      description: Removes a movie from the database by its ID.
+      parameters:
+        - $ref: "#/components/parameters/MovieId"
+      responses:
+        "200":
+          description: Movie deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Movie"
+        "500":
+          description: Movie ID not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /moviesbytitle:
     get:
@@ -153,6 +173,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  
 
 components:
   parameters:
