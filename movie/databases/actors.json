@@ -1,0 +1,32 @@
+{
+  "actors": [
+    {
+      "id": "actor1",
+      "firstname": "Leonardo",
+      "lastname": "DiCaprio",
+      "birthyear": 1974,
+      "films": ["96798c08-d19b-4986-a05d-7da856efb697"]
+    },
+    {
+      "id": "actor2",
+      "firstname": "Monica",
+      "lastname": "Bellucci",
+      "birthyear": 1964,
+      "films": ["96798c08-d19b-4986-a05d-7da856efb697", "39ab85e5-5e8e-4dc5-afea-65dc368bd7ab"]
+    },
+    {
+      "id": "actor3",
+      "firstname": "Alain",
+      "lastname": "Chabat",
+      "birthyear": 1958,
+      "films": ["96798c08-d19b-4986-a05d-7da856efb697"]
+    },
+    {
+      "id": "actor4",
+      "firstname": "George",
+      "lastname": "Clooney",
+      "birthyear": 1961,
+      "films": ["a8034f44-aee4-44cf-b32c-74cf452aaaae"]
+    }
+  ]
+}
