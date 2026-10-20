@@ -1,0 +1,17 @@
+    type Query {
+        get_user_bookings (_id: String!): Booking
+        get_all_bookings:[Booking]
+        get_detailed_user_bookings(_id : String!) : [Booking]
+    }
+    type Mutation{
+        add_booking(_id : String!,date: String!, movieid: String! ) : Booking
+        del_booking(_id:String!, date:String!, movieid:String!) : Booking
+    }
+    type Booking {
+        userid : String!
+        dates : [DateMovie]
+    }
+    type DateMovie {
+        date: String!
+        movies : [String!]
+    }
