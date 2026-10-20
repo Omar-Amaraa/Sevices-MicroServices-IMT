@@ -3,9 +3,11 @@ info:
   title: User Service API
   description: >-
     API for registering, authenticating, and managing cinema users.
-    Set the same strong JWT_SECRET_KEY environment variable for every service.
-    To provision an administrator, set that user's role to admin in
-    databases/users.json before the user signs in. New accounts are regular users.
+    All services must use the same JWT_SECRET_KEY. The Compose key is for local
+    development only; use a long random key in production. User records are
+    stored in the user_service.users MongoDB collection. A trusted database
+    operator provisions administrators by setting role to admin before login.
+    New accounts are regular users.
   version: "1.0.0"
 servers:
   - url: http://localhost:3203
@@ -369,3 +371,6 @@ components:
         error:
           type: string
           example: Invalid credentials
+        msg:
+          type: string
+          example: Missing Authorization Header

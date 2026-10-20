@@ -1,6 +1,8 @@
 import json
 import os
 import time
+import re
+from uuid import UUID
 from pathlib import Path
 
 from flask import Flask, request, jsonify, make_response
@@ -65,7 +67,20 @@ def add_schedule(date):
     if get_jwt().get("role") != "admin":
         return jsonify(error="Admin privileges required"), 403
 
-    req = request.get_json()
+    req = request.get_json(silent=True)
+    if not re.fullmatch(r"\d{8}", date):
+        return jsonify(error="date must use YYYYMMDD format"), 400
+    if not isinstance(req, dict):
+        return jsonify(error="A JSON schedule object is required"), 400
+    movie_ids = req.get("movies")
+    if req.get("date") != date or not isinstance(movie_ids, list):
+        return jsonify(error="date must match the URL and movies must be a list"), 400
+    try:
+        for movie_id in movie_ids:
+            UUID(movie_id)
+    except (TypeError, ValueError, AttributeError):
+        return jsonify(error="movies must contain valid UUIDs"), 400
+
     if schedules_collection.find_one({"date": str(date)}, {"_id": 1}):
         return make_response(jsonify({"error": "Schedule for this date already exists"}), 400)
     try:
