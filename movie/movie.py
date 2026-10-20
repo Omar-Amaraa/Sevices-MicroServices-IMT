@@ -3,23 +3,28 @@ from flask import Flask, request, jsonify, make_response
 import json
 import sys
 from werkzeug.exceptions import NotFound
-
+from pymongo import MongoClient
+from bson.json_util import dumps
 import resolvers as r
 
 app = Flask(__name__)
 
 PORT = 3200
 HOST = '0.0.0.0'
+client = MongoClient("mongodb://root:example@localhost:27017/")
 
-with open('{}/databases/movies.json'.format("."), 'r') as jsf:
-    movies = json.load(jsf)["movies"]
+with open('C:/Users/omara/Sevices-MicroServices-IMT/UE-AD-A1-TUTO-MONGO/movie/databases/movies.json'.format("."), 'w') as f:
+    movies = json.load(f)["movies"]
     print(movies)
 
 def write(movies):
-    with open('{}/databases/movies.json'.format("."), 'w') as f:
+    with open('C:/Users/omara/Sevices-MicroServices-IMT/UE-AD-A1-TUTO-MONGO/movie/databases/movies.json'.format("."), 'w') as f:
         full = {}
         full['movies']=movies
         json.dump(full, f)
+db = client["movies"]
+collection = db["movies"]
+collection.insert_many(movies)
 
 type_defs = load_schema_from_path('movie.graphql')
 
@@ -52,7 +57,7 @@ def get_movie_byid(movieid):
             return res
     return make_response(jsonify({"error":"Movie ID not found"}),500)
 
-@app.route("/moviesbytitle", methods=['GET'])
+"""@app.route("/moviesbytitle", methods=['GET'])
 def get_movie_bytitle():
     json = ""
     if request.args:
@@ -66,7 +71,7 @@ def get_movie_bytitle():
     else:
         res = make_response(jsonify(json),200)
     return res
-
+"""
 @app.route("/movies/<movieid>", methods=['POST'])
 def add_movie(movieid):
     req = request.get_json()
@@ -81,8 +86,31 @@ def add_movie(movieid):
     write(movies)
     res = make_response(jsonify({"message":"movie added"}),200)
     return res
+def update_movie_rating(movieid, rate):
+    myquery = { "id": movieid }
+    newvalues = { "$set": { "rating": float(rate) } }
+    collection.update_one(myquery, newvalues)
 
-@app.route("/movies/<movieid>/<rate>", methods=['PUT'])
+    res = make_response(jsonify({"message":"rate updated"}),200)
+    return res
+
+@app.route("/moviesbytitle", methods=['GET'])
+def get_movie_bytitle():
+    movie = {}
+    if request.args:
+        req = request.args
+        movie = collection.find_one({"title": str(req["title"])})
+        res = make_response(dumps(movie),200)
+        return res
+    return make_response(jsonify({"error":"movie title not found"}),500)
+
+@app.route("/movies/minrate/<rate>", methods=['GET'])
+def get_movies_minrate(rate):
+    mylist = list(collection.find({"rating": {"$gt": float(rate)}}))
+    res = make_response(dumps(mylist),200)
+    return res
+
+"""@app.route("/movies/<movieid>/<rate>", methods=['PUT'])
 def update_movie_rating(movieid, rate):
     for movie in movies:
         if str(movie["id"]) == str(movieid):
@@ -93,7 +121,7 @@ def update_movie_rating(movieid, rate):
 
     res = make_response(jsonify({"error":"movie ID not found"}),500)
     return res
-
+"""
 @app.route("/movies/<movieid>", methods=['DELETE'])
 def del_movie(movieid):
     for movie in movies:

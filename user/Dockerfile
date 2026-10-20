@@ -5,7 +5,6 @@ WORKDIR /app
 
 # copy the requirements file in the workdir
 RUN
-
 # install the Python requirements
 RUN
 
