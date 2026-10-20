@@ -1,16 +1,15 @@
-FROM python
-# can you find a lighter image?
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# copy the requirements file in the workdir
-RUN
+COPY requirements.txt ./requirements.txt
 
-# install the Python requirements
-RUN
+RUN pip install --no-cache-dir -r requirements.txt
 
-# copy the app files and directories
-RUN
+COPY user/ ./user/
 
-# start user.py when the container is started
-CMD 
+WORKDIR /app/user
+
+EXPOSE 3203
+
+CMD ["python", "user.py"]

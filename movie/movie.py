@@ -1,12 +1,31 @@
+import os
+from functools import wraps
+
 from flask import Flask, request, jsonify, make_response
+from flask_jwt_extended import JWTManager, get_jwt, verify_jwt_in_request
 import json
 import sys
 from werkzeug.exceptions import NotFound
 
 app = Flask(__name__)
+app.config["JWT_SECRET_KEY"] = os.environ.get(
+    "JWT_SECRET_KEY", "jwt-secret-key-for-microservices"
+)
+jwt = JWTManager(app)
 
 PORT = 3200
 HOST = '0.0.0.0'
+
+
+def admin_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        verify_jwt_in_request()
+        if get_jwt().get("role") != "admin":
+            return jsonify(error="Admin privileges required"), 403
+        return fn(*args, **kwargs)
+
+    return wrapper
 
 with open('{}/databases/movies.json'.format("."), 'r') as jsf:
     movies = json.load(jsf)["movies"]
@@ -52,6 +71,7 @@ def get_movie_bytitle():
     return res
 
 @app.route("/movies/<movieid>", methods=['POST'])
+@admin_required
 def add_movie(movieid):
     req = request.get_json()
 
@@ -67,6 +87,7 @@ def add_movie(movieid):
     return res
 
 @app.route("/movies/<movieid>/<rate>", methods=['PUT'])
+@admin_required
 def update_movie_rating(movieid, rate):
     for movie in movies:
         if str(movie["id"]) == str(movieid):
@@ -79,6 +100,7 @@ def update_movie_rating(movieid, rate):
     return res
 
 @app.route("/movies/<movieid>", methods=['DELETE'])
+@admin_required
 def del_movie(movieid):
     for movie in movies:
         if str(movie["id"]) == str(movieid):

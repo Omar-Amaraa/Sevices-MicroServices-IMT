@@ -1,29 +1,128 @@
 openapi: 3.0.3
 info:
   title: User Service API
-  description: API for authenticating and managing cinema users.
+  description: >-
+    API for registering, authenticating, and managing cinema users.
+    Set the same strong JWT_SECRET_KEY environment variable for every service.
+    To provision an administrator, set that user's role to admin in
+    databases/users.json before the user signs in. New accounts are regular users.
   version: "1.0.0"
-  contact:
-    name: Helene Coullon
-    url: https://helene-coullon.fr/
-    email: helene.coullon@imt-atlantique.fr
 servers:
   - url: http://localhost:3203
     description: Local development server for User service
 
 tags:
-  - name: admin
-    description: Secured Admin-only calls
-  - name: dev
-    description: Operations available to regular developers
+  - name: authentication
+    description: User registration and authentication
+  - name: users
+    description: Authenticated user operations
 
 paths:
+  /signup:
+    post:
+      tags:
+        - authentication
+      summary: Register a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /login:
+    post:
+      tags:
+        - authentication
+      summary: Sign in and obtain an access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - access_token
+                properties:
+                  access_token:
+                    type: string
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /me:
+    get:
+      tags:
+        - users
+      summary: Get the signed-in user's profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Missing or invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /users:
     get:
       tags:
-        - dev
-      summary: Retrieve the full list of users
-      description: Returns the list of all registered users in the database.
+        - users
+      summary: Retrieve the full list of users (admin only)
+      description: Requires a token with the admin role.
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: List of users
@@ -32,15 +131,29 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/User"
+                  $ref: "#/components/schemas/UserSummary"
+        "401":
+          description: Missing or invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Admin privileges required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /users/{userid}:
+    parameters:
+      - $ref: "#/components/parameters/UserId"
     get:
       tags:
-        - dev
-      summary: Retrieve a user by their ID
-      parameters:
-        - $ref: "#/components/parameters/UserId"
+        - users
+      summary: Retrieve a user by ID (owner or admin)
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: User found
@@ -48,6 +161,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+        "401":
+          description: Missing or invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: The token is neither for this user nor an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: User not found
           content:
@@ -55,57 +180,49 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
-    post:
-      tags:
-        - admin
-      summary: Add a new user
-      description: Creates a new user entry if the ID does not already exist.
-      parameters:
-        - $ref: "#/components/parameters/UserId"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/User"
-      responses:
-        "201":
-          description: User added successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "User added"
-        "400":
-          description: User ID already exists
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-
     put:
       tags:
-        - admin
-      summary: Update a user's details
-      description: Modifies an existing user's information.
-      parameters:
-        - $ref: "#/components/parameters/UserId"
+        - users
+      summary: Update a user's name (owner or admin)
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/User"
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
       responses:
         "200":
-          description: User updated successfully
+          description: User updated
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: The token is neither for this user nor an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: User not found
           content:
@@ -115,14 +232,13 @@ paths:
 
     delete:
       tags:
-        - admin
-      summary: Delete a user
-      description: Removes a user from the database.
-      parameters:
-        - $ref: "#/components/parameters/UserId"
+        - users
+      summary: Delete a user account (owner or admin)
+      security:
+        - bearerAuth: []
       responses:
         "200":
-          description: User deleted successfully
+          description: User deleted
           content:
             application/json:
               schema:
@@ -130,7 +246,19 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "User deleted"
+                    example: User deleted
+        "401":
+          description: Missing or invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: The token is neither for this user nor an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: User not found
           content:
@@ -139,6 +267,12 @@ paths:
                 $ref: "#/components/schemas/Error"
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   parameters:
     UserId:
       name: userid
@@ -149,22 +283,81 @@ components:
         type: string
 
   schemas:
+    SignupRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Chris Rivers
+        email:
+          type: string
+          format: email
+          example: chris@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: chris@example.com
+        password:
+          type: string
+          format: password
+
     User:
       type: object
-      description: Representation of a user in the cinema system.
+      description: Public user profile. Password hashes are never returned.
       properties:
         id:
           type: string
-          description: Unique string identifier
-          example: "chris_rivers"
+          example: 66eb6c367d304655bfc5e2bb7ea1d915
         name:
           type: string
-          description: Full name of the user
-          example: "Chris Rivers"
+          example: Chris Rivers
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: Null for legacy users who have not registered credentials.
         last_active:
           type: integer
           description: Unix timestamp of the user's last activity
           example: 1360031010
+        role:
+          type: string
+          enum: [user, admin]
+          example: user
+      required:
+        - id
+        - name
+        - last_active
+
+    UserSummary:
+      type: object
+      description: User-list entry; does not expose email or credential data.
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        last_active:
+          type: integer
+        role:
+          type: string
+          enum: [user, admin]
       required:
         - id
         - name
@@ -175,4 +368,4 @@ components:
       properties:
         error:
           type: string
-          example: "User not found"
+          example: Invalid credentials

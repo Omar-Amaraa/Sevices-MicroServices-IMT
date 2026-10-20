@@ -1,7 +1,10 @@
 openapi: 3.0.3
 info:
   title: Schedule Service API
-  description: API for managing cinema movie schedules.
+  description: >-
+    API for managing cinema movie schedules. Set the same JWT_SECRET_KEY
+    environment variable used by the User service. Schedule mutations require
+    an admin-role token.
   version: "1.0.0"
   contact:
     name: Helene Coullon
@@ -60,6 +63,8 @@ paths:
         - admin
       summary: Add a new schedule
       description: Creates a schedule for a specific date if one does not already exist.
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/Date"
       requestBody:
@@ -91,6 +96,8 @@ paths:
         - admin
       summary: Delete a schedule
       description: Removes an entire schedule entry for a specific date.
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/Date"
       responses:
@@ -112,6 +119,12 @@ paths:
                 $ref: "#/components/schemas/Error"
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   parameters:
     Date:
       name: date
