@@ -1,7 +1,10 @@
 openapi: 3.0.3
 info:
   title: Schedule Service API
-  description: API for managing cinema movie schedules.
+  description: >-
+    API for managing cinema movie schedules. Set the same JWT_SECRET_KEY
+    environment variable used by the User service. Schedule mutations require
+    an admin-role token.
   version: "1.0.0"
   contact:
     name: Helene Coullon
@@ -60,6 +63,8 @@ paths:
         - admin
       summary: Add a new schedule
       description: Creates a schedule for a specific date if one does not already exist.
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/Date"
       requestBody:
@@ -80,7 +85,19 @@ paths:
                     type: string
                     example: "Schedule added"
         "400":
-          description: Schedule for this date already exists
+          description: Invalid schedule, date mismatch, or schedule already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing, invalid, or expired access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Admin privileges required
           content:
             application/json:
               schema:
@@ -91,6 +108,8 @@ paths:
         - admin
       summary: Delete a schedule
       description: Removes an entire schedule entry for a specific date.
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/Date"
       responses:
@@ -110,8 +129,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing, invalid, or expired access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Admin privileges required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   parameters:
     Date:
       name: date
@@ -120,6 +157,7 @@ components:
       description: The date of the schedule in YYYYMMDD format
       schema:
         type: string
+        pattern: '^\d{8}$'
 
   schemas:
     Schedule:
@@ -128,8 +166,9 @@ components:
       properties:
         date:
           type: string
-          description: Date string formatted as YYYYMMDD
+          description: Date string formatted as YYYYMMDD; must match the URL date
           example: "20151130"
+          pattern: '^\d{8}$'
         movies:
           type: array
           description: List of movie UUIDs playing on this date
@@ -149,3 +188,6 @@ components:
         error:
           type: string
           example: "No schedule found for this date"
+        msg:
+          type: string
+          example: "Missing Authorization Header"

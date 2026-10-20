@@ -1,7 +1,10 @@
 openapi: 3.0.3
 info:
   title: Movie Service API
-  description: API for browsing, adding, and rating movies.
+  description: >-
+    API for browsing, adding, and rating movies. Set the same JWT_SECRET_KEY
+    environment variable used by the User service. Movie mutations require an
+    admin-role token.
   version: "1.0.0"
   contact:
     name: Helene Coullon
@@ -75,6 +78,8 @@ paths:
         - admin
       summary: Add a new movie
       description: Adds a movie with the given ID, if it doesn't already exist.
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/MovieId"
       requestBody:
@@ -105,6 +110,8 @@ paths:
         - admin
       summary: Delete a movie
       description: Removes a movie from the database by its ID.
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/MovieId"
       responses:
@@ -152,6 +159,8 @@ paths:
       tags:
         - admin
       summary: Update a movie's rating
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/MovieId"
         - name: rate
@@ -176,6 +185,12 @@ paths:
   
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   parameters:
     MovieId:
       name: movieid

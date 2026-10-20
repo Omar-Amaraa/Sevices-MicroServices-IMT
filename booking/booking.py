@@ -1,6 +1,16 @@
+import os
+from functools import wraps
+
 from functools import wraps
 
 from flask import Flask, render_template, request, jsonify, make_response
+from flask_jwt_extended import (
+    JWTManager,
+    get_jwt,
+    get_jwt_identity,
+    jwt_required,
+    verify_jwt_in_request,
+)
 from flask_jwt_extended import (
     JWTManager,
     get_jwt,
@@ -23,11 +33,43 @@ app.config["JWT_SECRET_KEY"] = os.environ.get(
     "JWT_SECRET_KEY", "jwt-secret-key-for-microservices"
 )
 jwt = JWTManager(app)
+app.config["JWT_SECRET_KEY"] = os.environ.get(
+    "JWT_SECRET_KEY", "jwt-secret-key-for-microservices"
+)
+jwt = JWTManager(app)
 
 PORT = 3201
 HOST = '0.0.0.0'
 client = MongoClient("mongodb://root:example@localhost:27017/")
 
+MOVIE_URL = os.environ.get("MOVIE_URL", "http://localhost:3200")
+SCHEDULE_URL = os.environ.get("SCHEDULE_URL", "http://localhost:3202")
+
+
+def admin_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        verify_jwt_in_request()
+        if get_jwt().get("role") != "admin":
+            return jsonify(error="Admin privileges required"), 403
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
+def owner_or_admin(userid):
+    return (
+        str(get_jwt_identity()) == str(userid)
+        or get_jwt().get("role") == "admin"
+    )
+
+with open('{}/databases/bookings.json'.format("."), 'r') as jsf:
+    bookings = json.load(jsf)["bookings"]
+
+def write(bookings):
+    with open('{}/databases/bookings.json'.format("."), 'w') as f:
+        full = {'bookings': bookings}
+        json.dump(full, f)
 MOVIE_URL = os.environ.get("MOVIE_URL", "http://localhost:3200")
 SCHEDULE_URL = os.environ.get("SCHEDULE_URL", "http://localhost:3202")
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -124,6 +166,8 @@ def get_detailed_user_bookings(userid):
 @app.route("/bookings/<userid>", methods=['POST'])
 @jwt_required()
 def add_booking(userid):
+    if not owner_or_admin(userid):
+        return jsonify(error="Forbidden"), 403
     req = request.get_json()
     target_date = req.get("date")
     target_movie = req.get("movieid")

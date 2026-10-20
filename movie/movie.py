@@ -1,5 +1,9 @@
+import os
+from functools import wraps
+
 from ariadne import graphql_sync, make_executable_schema, load_schema_from_path, ObjectType, QueryType, MutationType
 from flask import Flask, request, jsonify, make_response
+from flask_jwt_extended import JWTManager, get_jwt, verify_jwt_in_request
 import json
 import sys
 from werkzeug.exceptions import NotFound
@@ -8,13 +12,28 @@ from bson.json_util import dumps
 import resolvers as r
 
 app = Flask(__name__)
+app.config["JWT_SECRET_KEY"] = os.environ.get(
+    "JWT_SECRET_KEY", "jwt-secret-key-for-microservices"
+)
+jwt = JWTManager(app)
 
 PORT = 3200
 HOST = '0.0.0.0'
 client = MongoClient("mongodb://root:example@localhost:27017/")
 
-with open('C:/Users/omara/Sevices-MicroServices-IMT/UE-AD-A1-TUTO-MONGO/movie/databases/movies.json'.format("."), 'w') as f:
-    movies = json.load(f)["movies"]
+
+def admin_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        verify_jwt_in_request()
+        if get_jwt().get("role") != "admin":
+            return jsonify(error="Admin privileges required"), 403
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+with open('{}/databases/movies.json'.format("."), 'r') as jsf:
+    movies = json.load(jsf)["movies"]
     print(movies)
 
 def write(movies):
@@ -73,6 +92,7 @@ def get_movie_bytitle():
     return res
 """
 @app.route("/movies/<movieid>", methods=['POST'])
+@admin_required
 def add_movie(movieid):
     req = request.get_json()
 
@@ -86,31 +106,9 @@ def add_movie(movieid):
     write(movies)
     res = make_response(jsonify({"message":"movie added"}),200)
     return res
-def update_movie_rating(movieid, rate):
-    myquery = { "id": movieid }
-    newvalues = { "$set": { "rating": float(rate) } }
-    collection.update_one(myquery, newvalues)
 
-    res = make_response(jsonify({"message":"rate updated"}),200)
-    return res
-
-@app.route("/moviesbytitle", methods=['GET'])
-def get_movie_bytitle():
-    movie = {}
-    if request.args:
-        req = request.args
-        movie = collection.find_one({"title": str(req["title"])})
-        res = make_response(dumps(movie),200)
-        return res
-    return make_response(jsonify({"error":"movie title not found"}),500)
-
-@app.route("/movies/minrate/<rate>", methods=['GET'])
-def get_movies_minrate(rate):
-    mylist = list(collection.find({"rating": {"$gt": float(rate)}}))
-    res = make_response(dumps(mylist),200)
-    return res
-
-"""@app.route("/movies/<movieid>/<rate>", methods=['PUT'])
+@app.route("/movies/<movieid>/<rate>", methods=['PUT'])
+@admin_required
 def update_movie_rating(movieid, rate):
     for movie in movies:
         if str(movie["id"]) == str(movieid):
@@ -123,6 +121,7 @@ def update_movie_rating(movieid, rate):
     return res
 """
 @app.route("/movies/<movieid>", methods=['DELETE'])
+@admin_required
 def del_movie(movieid):
     for movie in movies:
         if str(movie["id"]) == str(movieid):
