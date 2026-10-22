@@ -1,0 +1,238 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: My first collection
+meta:
+  id: wrk_9948e4bdc71b45378c3acf0ccaeec582
+  created: 1791359646525
+  modified: 1791359646525
+  description: ""
+collection:
+  - url: http://127.0.0.1:3203/me
+    name: user
+    meta:
+      id: req_ce511885ac38420e9a673342cd8350bd
+      created: 1791359646734
+      modified: 1792575481086
+      isPrivate: false
+      description: ""
+      sortKey: -1791359646734
+    method: GET
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "name": "Al User",
+          "email": "al@example.com",
+          "password": "password123"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+    authentication:
+      type: bearer
+      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MjU3NTI3MSwianRpIjoiODI2ZDZjZTQtYzg4ZS00NGYyLWFiNmMtMmIxNzFlZWM5MWRkIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImU5YTA0ODA1MGE1OTQ1MTU4ZTYyNTVjYjdhMmYxMGEwIiwibmJmIjoxNzkyNTc1MjcxLCJjc3JmIjoiMTNiMDc4ZDEtNTBiMS00ZWE5LWFkMzctYTlmNjIyODlkM2FhIiwiZXhwIjoxNzkyNTc2MTcxLCJyb2xlIjoidXNlciJ9.W76CohmMrLxwAbv4XrLtX-y_xIbl29ReZCjcJ5mL7wE
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:3202/schedules/20151202
+    name: Check the schedule
+    meta:
+      id: req_8e785c677eb24defacabb8e14905bb26
+      created: 1792518553088
+      modified: 1792575327649
+      isPrivate: false
+      description: ""
+      sortKey: -1792518553088
+    method: GET
+    body:
+      mimeType: application/json
+      text: |-
+        {
+              "date":"20151300",
+              "movies":[
+                "267eedb8-0f5d-42d5-8f43-72426b9fb3e6",
+                "7daf7208-be4d-4944-a3ae-c1c2f516f3e6",
+                "39ab85e5-5e8e-4dc5-afea-65dc368bd7ab",
+                "a8034f44-aee4-44cf-b32c-74cf452aaaae"
+              ]
+            }
+    headers:
+      - name: Content-Type
+        value: application/json
+    authentication:
+      type: bearer
+      token: ""
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://127.0.0.1:3200/graphql
+    name: Look up a movie
+    meta:
+      id: req_456c84e4ad644971be3e1f18c2c8e3f3
+      created: 1792566568421
+      modified: 1792575365930
+      isPrivate: false
+      description: ""
+      sortKey: -1792566568421
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"{\n  movie_with_id(_id:
+        \"96798c08-d19b-4986-a05d-7da856efb697\")
+        {\n    id\n    title\n    director\n    rating\n  }\n}"}'
+    headers:
+      - name: Content-Type
+        value: application/json
+    authentication:
+      type: bearer
+      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MjU3NTI3MSwianRpIjoiODI2ZDZjZTQtYzg4ZS00NGYyLWFiNmMtMmIxNzFlZWM5MWRkIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImU5YTA0ODA1MGE1OTQ1MTU4ZTYyNTVjYjdhMmYxMGEwIiwibmJmIjoxNzkyNTc1MjcxLCJjc3JmIjoiMTNiMDc4ZDEtNTBiMS00ZWE5LWFkMzctYTlmNjIyODlkM2FhIiwiZXhwIjoxNzkyNTc2MTcxLCJyb2xlIjoidXNlciJ9.W76CohmMrLxwAbv4XrLtX-y_xIbl29ReZCjcJ5mL7wE
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:3201/graphql
+    name: Book the movie
+    meta:
+      id: req_09982dfb98d0445ca4ec73215f0c05a0
+      created: 1792568622365
+      modified: 1792575641726
+      isPrivate: false
+      description: ""
+      sortKey: -1792568622365
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"mutation {\n  add_booking(\n    _id:
+        \"e9a048050a5945158e6255cb7a2f10a0\"\n    date:
+        \"20151202\"\n    movieid: \"96798c08-d19b-4986-a05d-7da856efb697\"\n  )
+        {\n    userid\n    dates {\n      date\n      movies\n    }\n  }\n}"}'
+    headers:
+      - name: Content-Type
+        value: application/json
+    authentication:
+      type: bearer
+      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MjU3NTI3MSwianRpIjoiODI2ZDZjZTQtYzg4ZS00NGYyLWFiNmMtMmIxNzFlZWM5MWRkIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImU5YTA0ODA1MGE1OTQ1MTU4ZTYyNTVjYjdhMmYxMGEwIiwibmJmIjoxNzkyNTc1MjcxLCJjc3JmIjoiMTNiMDc4ZDEtNTBiMS00ZWE5LWFkMzctYTlmNjIyODlkM2FhIiwiZXhwIjoxNzkyNTc2MTcxLCJyb2xlIjoidXNlciJ9.W76CohmMrLxwAbv4XrLtX-y_xIbl29ReZCjcJ5mL7wE
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://localhost:3201/graphql
+    name: See bookings
+    meta:
+      id: req_4dd679d99da24a5ba35b3a3ff0f38f97
+      created: 1792569848787
+      modified: 1792575543941
+      isPrivate: false
+      description: ""
+      sortKey: -1792569848787
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"{\n  get_detailed_user_bookings(_id:
+        \"e9a048050a5945158e6255cb7a2f10a0\") {\n    userid\n    dates
+        {\n      date\n      movies\n    }\n  }\n}"}'
+    headers:
+      - name: Content-Type
+        value: application/json
+    authentication:
+      type: bearer
+      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MjU3NTI3MSwianRpIjoiODI2ZDZjZTQtYzg4ZS00NGYyLWFiNmMtMmIxNzFlZWM5MWRkIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImU5YTA0ODA1MGE1OTQ1MTU4ZTYyNTVjYjdhMmYxMGEwIiwibmJmIjoxNzkyNTc1MjcxLCJjc3JmIjoiMTNiMDc4ZDEtNTBiMS00ZWE5LWFkMzctYTlmNjIyODlkM2FhIiwiZXhwIjoxNzkyNTc2MTcxLCJyb2xlIjoidXNlciJ9.W76CohmMrLxwAbv4XrLtX-y_xIbl29ReZCjcJ5mL7wE
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://127.0.0.1:3200/graphql
+    name: Look up movie actors
+    meta:
+      id: req_1aaef15778644b6684049327bbf8109e
+      created: 1792570361155
+      modified: 1792575418467
+      isPrivate: false
+      description: ""
+      sortKey: -1792567595393
+    method: POST
+    body:
+      mimeType: application/graphql
+      text: '{"query":"{\n  movie_with_id(_id:
+        \"96798c08-d19b-4986-a05d-7da856efb697\")
+        {\n    id\n    title\n    actors
+        {\n      id\n      firstname\n      lastname\n      birthyear\n      films\n    }\n  }\n}"}'
+    headers:
+      - name: Content-Type
+        value: application/json
+    authentication:
+      type: bearer
+      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MjU3NTI3MSwianRpIjoiODI2ZDZjZTQtYzg4ZS00NGYyLWFiNmMtMmIxNzFlZWM5MWRkIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImU5YTA0ODA1MGE1OTQ1MTU4ZTYyNTVjYjdhMmYxMGEwIiwibmJmIjoxNzkyNTc1MjcxLCJjc3JmIjoiMTNiMDc4ZDEtNTBiMS00ZWE5LWFkMzctYTlmNjIyODlkM2FhIiwiZXhwIjoxNzkyNTc2MTcxLCJyb2xlIjoidXNlciJ9.W76CohmMrLxwAbv4XrLtX-y_xIbl29ReZCjcJ5mL7wE
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: http://127.0.0.1:3203/me
+    name: admin
+    meta:
+      id: req_803ed97b720e4dae98ceed703b124ec8
+      created: 1792573660206
+      modified: 1792575615516
+      isPrivate: false
+      description: ""
+      sortKey: -1791359646634
+    method: GET
+    body:
+      mimeType: application/json
+      text: |-
+        {"name": "Donald Trump",
+        "email": "donald.trump@gmail.com",
+        "password": "TrumpDonald"}
+    headers:
+      - name: Content-Type
+        value: application/json
+    authentication:
+      type: bearer
+      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc5MjU3NTU3MiwianRpIjoiNGRlZTFkN2UtNzk1Ni00NWQwLThiMmEtMzBhMDA0OTVjMGRmIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImYxNGExOTEzZmNhZjRhODhhNmE1N2FjMzljMzIwMTBiIiwibmJmIjoxNzkyNTc1NTcyLCJjc3JmIjoiZDlkOTE5YzctNmYyYy00YTI5LWJhNDMtNTM1ZmVhMzdkZGUxIiwiZXhwIjoxNzkyNTc2NDcyLCJyb2xlIjoiYWRtaW4ifQ.2NHHyEUPYnnFAihEchHqt2OQhJgh3YxVGz4XWioJs04
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_97d41472a76022c23799fa7562eee57c9e2dbe19
+    created: 1791359646532
+    modified: 1791359646532
+environments:
+  name: Base Environment
+  meta:
+    id: env_97d41472a76022c23799fa7562eee57c9e2dbe19
+    created: 1791359646530
+    modified: 1791359646530
+    isPrivate: false
