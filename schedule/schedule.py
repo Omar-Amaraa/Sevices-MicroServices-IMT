@@ -56,6 +56,8 @@ def get_all_schedules():
 
 @app.route("/schedules/<date>", methods=['GET'])
 def get_schedule_bydate(date):
+    if not re.fullmatch(r"\d{8}", date):
+        return jsonify(error="date must use YYYYMMDD format"), 400
     schedule = schedules_collection.find_one({"date": str(date)}, {"_id": 0})
     if schedule is None:
         return make_response(jsonify({"error": "No schedule found for this date"}), 404)
@@ -94,6 +96,8 @@ def add_schedule(date):
 def del_schedule(date):
     if get_jwt().get("role") != "admin":
         return jsonify(error="Admin privileges required"), 403
+    if not re.fullmatch(r"\d{8}", date):
+        return jsonify(error="date must use YYYYMMDD format"), 400
 
     result = schedules_collection.delete_one({"date": str(date)})
     if result.deleted_count:

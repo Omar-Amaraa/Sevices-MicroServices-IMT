@@ -57,6 +57,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "400":
+          description: Date must use YYYYMMDD format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
     post:
       tags:
@@ -125,6 +131,12 @@ paths:
                     example: "Schedule deleted"
         "404":
           description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "400":
+          description: Date must use YYYYMMDD format
           content:
             application/json:
               schema:

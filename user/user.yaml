@@ -200,6 +200,7 @@ paths:
                 name:
                   type: string
                   minLength: 1
+                  pattern: '.*\S.*'
       responses:
         "200":
           description: User updated
@@ -295,10 +296,12 @@ components:
         name:
           type: string
           minLength: 1
+          pattern: '.*\S.*'
           example: Chris Rivers
         email:
           type: string
           format: email
+          pattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
           example: chris@example.com
         password:
           type: string
@@ -314,6 +317,7 @@ components:
         email:
           type: string
           format: email
+          pattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
           example: chris@example.com
         password:
           type: string
@@ -346,6 +350,7 @@ components:
         - id
         - name
         - last_active
+        - role
 
     UserSummary:
       type: object
@@ -364,6 +369,7 @@ components:
         - id
         - name
         - last_active
+        - role
 
     Error:
       type: object

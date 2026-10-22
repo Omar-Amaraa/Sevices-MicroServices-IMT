@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 import uuid
 from pathlib import Path
@@ -20,6 +21,7 @@ app = Flask(__name__)
 
 PORT = 3203
 HOST = "0.0.0.0"
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 app.config["JWT_SECRET_KEY"] = os.environ.get(
     "JWT_SECRET_KEY", "jwt-secret-key-for-microservices"
@@ -76,7 +78,9 @@ def home():
 
 @app.route("/signup", methods=["POST"])
 def signup():
-    req = request.get_json()
+    req = request.get_json(silent=True)
+    if not isinstance(req, dict):
+        return jsonify(error="A JSON object is required"), 400
 
     name = req.get("name")
     email = req.get("email")
@@ -87,12 +91,7 @@ def signup():
 
     name = name.strip()
     email = email.strip().lower()
-    if (
-        not name
-        or not email
-        or "@" not in email
-        or any(char.isspace() for char in email)
-    ):
+    if not name or not EMAIL_PATTERN.fullmatch(email):
         return jsonify(error="A valid name and email are required"), 400
     if len(password) < 8:
         return jsonify(error="Password must be at least 8 characters"), 400
@@ -116,7 +115,9 @@ def signup():
 
 @app.route("/login", methods=["POST"])
 def login():
-    req = request.get_json()
+    req = request.get_json(silent=True)
+    if not isinstance(req, dict):
+        return jsonify(error="A JSON object is required"), 400
 
     email = req.get("email")
     password = req.get("password")
@@ -124,6 +125,8 @@ def login():
         return jsonify(error="email and password are required"), 400
 
     email = email.strip().lower()
+    if not EMAIL_PATTERN.fullmatch(email):
+        return jsonify(error="A valid email is required"), 400
     user = users_collection.find_one({"email": email})
     password_hash = user.get("password_hash") if user else None
     if not password_hash or not check_password_hash(password_hash, password):
@@ -195,9 +198,11 @@ def update_user(userid):
     ):
         return jsonify(error="Forbidden"), 403
 
-    req = request.get_json()
-    
-    name = req["name"]
+    req = request.get_json(silent=True)
+    if not isinstance(req, dict):
+        return jsonify(error="A JSON object is required"), 400
+
+    name = req.get("name")
     if not isinstance(name, str) or not name.strip():
         return jsonify(error="name must be a non-empty string"), 400
 

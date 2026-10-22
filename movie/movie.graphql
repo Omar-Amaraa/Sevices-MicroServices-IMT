@@ -1,19 +1,26 @@
+"""Requêtes de lecture exposées par le service Movie."""
 type Query {
+    """Recherche un film par son identifiant."""
     movie_with_id(_id: String!): Movie
 }
 
+"""Mutations disponibles pour modifier les données d'un film."""
 type Mutation {
+    """Modifie la note d'un film. Requiert un jeton admin."""
     update_movie_rate(_id: String!, _rate: Float!): Movie
 }
 
+"""Film et acteurs associés."""
 type Movie {
     id: String!
     title: String!
     director: String!
     rating: Float!
+    """Acteurs dont la filmographie contient ce film."""
     actors: [Actor]
 }
 
+"""Informations publiques sur un acteur."""
 type Actor {
     id: String!
     firstname: String!
