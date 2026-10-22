@@ -4,13 +4,7 @@ from functools import wraps
 from functools import wraps
 
 from flask import Flask, render_template, request, jsonify, make_response
-from flask_jwt_extended import (
-    JWTManager,
-    get_jwt,
-    get_jwt_identity,
-    jwt_required,
-    verify_jwt_in_request,
-)
+
 from flask_jwt_extended import (
     JWTManager,
     get_jwt,
@@ -40,7 +34,11 @@ jwt = JWTManager(app)
 
 PORT = 3201
 HOST = '0.0.0.0'
-client = MongoClient("mongodb://root:example@localhost:27017/")
+mongo_uri = os.environ.get("MONGODB_URI")
+if not mongo_uri:
+    raise RuntimeError("Set the MONGODB_URI environment variable")
+client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
+client.admin.command("ping")
 
 MOVIE_URL = os.environ.get("MOVIE_URL", "http://localhost:3200")
 SCHEDULE_URL = os.environ.get("SCHEDULE_URL", "http://localhost:3202")
@@ -92,7 +90,7 @@ def owner_or_admin(userid):
         or get_jwt().get("role") == "admin"
     )
 
-db = client["bookings"]
+db = client[os.environ.get("MONGODB_DATABASE", "bookings")]
 collection = db["bookings"]
 collection.create_index("userid", unique=True)
 type_defs = load_schema_from_path('{}/booking.graphql'.format(BASE))
@@ -115,6 +113,7 @@ mutation.set_field('del_booking', r.del_booking)
 schema = make_executable_schema(type_defs, booking, query, mutation, dateMovie)
 
 @app.route("/graphql", methods=['POST'])
+@jwt_required()
 def graphql_server():
     data = request.get_json()
     success, result = graphql_sync(schema, data, context_value=request, debug=app.debug)

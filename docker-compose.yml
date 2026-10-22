@@ -4,12 +4,15 @@ services:
       context: .
       dockerfile: movie/Dockerfile
     restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
     ports:
       - "127.0.0.1:3200:3200"
     environment:
       JWT_SECRET_KEY: jwt-secret-key-for-microservices
-    volumes:
-      - movie_data:/app/movie/databases
+      MONGODB_URI: mongodb://root:example@mongo:27017/?authSource=admin
+      MONGODB_DATABASE: movies
 
   booking:
     build:
@@ -17,12 +20,18 @@ services:
       dockerfile: booking/Dockerfile
     restart: unless-stopped
     depends_on:
-      - movie
-      - schedule
+      movie:
+        condition: service_started
+      schedule:
+        condition: service_started
+      mongo:
+        condition: service_healthy
     ports:
       - "127.0.0.1:3201:3201"
     environment:
       JWT_SECRET_KEY: jwt-secret-key-for-microservices
+      MONGODB_URI: mongodb://root:example@mongo:27017/?authSource=admin
+      MONGODB_DATABASE: bookings
       MOVIE_URL: http://movie:3200
       SCHEDULE_URL: http://schedule:3202
     volumes:
@@ -88,6 +97,5 @@ services:
 
 volumes:
   mongo_data:
-  movie_data:
   booking_data:
 

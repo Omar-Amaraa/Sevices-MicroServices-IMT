@@ -1,14 +1,14 @@
 import os
+import json
+from pathlib import Path
 from functools import wraps
+
 
 from ariadne import graphql_sync, make_executable_schema, load_schema_from_path, ObjectType, QueryType, MutationType
 from flask import Flask, request, jsonify, make_response
-from flask_jwt_extended import JWTManager, get_jwt, verify_jwt_in_request
-import json
-import sys
-from werkzeug.exceptions import NotFound
-from pymongo import MongoClient
-from bson.json_util import dumps
+from flask_jwt_extended import JWTManager, get_jwt, verify_jwt_in_request, jwt_required
+from pymongo import MongoClient, ReturnDocument
+from pymongo.errors import DuplicateKeyError
 import resolvers as r
 
 app = Flask(__name__)
@@ -19,7 +19,11 @@ jwt = JWTManager(app)
 
 PORT = 3200
 HOST = '0.0.0.0'
-client = MongoClient("mongodb://root:example@localhost:27017/")
+mongo_uri = os.environ.get("MONGODB_URI")
+if not mongo_uri:
+    raise RuntimeError("Set the MONGODB_URI environment variable")
+client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
+client.admin.command("ping")
 
 
 def admin_required(fn):
@@ -32,18 +36,30 @@ def admin_required(fn):
 
     return wrapper
 
-with open('{}/databases/movies.json'.format("."), 'r') as jsf:
-    movies = json.load(jsf)["movies"]
-    print(movies)
-
-def write(movies):
-    with open('C:/Users/omara/Sevices-MicroServices-IMT/UE-AD-A1-TUTO-MONGO/movie/databases/movies.json'.format("."), 'w') as f:
-        full = {}
-        full['movies']=movies
-        json.dump(full, f)
-db = client["movies"]
+db = client[os.environ.get("MONGODB_DATABASE", "movies")]
 collection = db["movies"]
-collection.insert_many(movies)
+collection.create_index("id", unique=True)
+movies_file = Path(__file__).parent / "databases" / "movies.json"
+with movies_file.open("r", encoding="utf-8") as jsf:
+    movie_seeds = json.load(jsf)["movies"]
+for movie_data in movie_seeds:
+    collection.update_one(
+        {"id": movie_data["id"]},
+        {"$setOnInsert": movie_data},
+        upsert=True,
+    )
+
+actors_collection = db["actors"]
+actors_collection.create_index("id", unique=True)
+actors_file = Path(__file__).parent / "databases" / "actors.json"
+with actors_file.open("r", encoding="utf-8") as jsf:
+    actor_seeds = json.load(jsf)["actors"]
+for actor_data in actor_seeds:
+    actors_collection.update_one(
+        {"id": actor_data["id"]},
+        {"$setOnInsert": actor_data},
+        upsert=True,
+    )
 
 type_defs = load_schema_from_path('movie.graphql')
 
@@ -65,15 +81,16 @@ def home():
 
 @app.route("/json", methods=['GET'])
 def get_json():
+    movies = list(collection.find({}, {"_id": 0}))
     res = make_response(jsonify(movies), 200)
     return res
 
 @app.route("/movies/<movieid>", methods=['GET'])
 def get_movie_byid(movieid):
-    for movie in movies:
-        if str(movie["id"]) == str(movieid):
-            res = make_response(jsonify(movie),200)
-            return res
+    movie = collection.find_one({"id": str(movieid)}, {"_id": 0})
+    if movie is not None:
+        res = make_response(jsonify(movie), 200)
+        return res
     return make_response(jsonify({"error":"Movie ID not found"}),500)
 
 """@app.route("/moviesbytitle", methods=['GET'])
@@ -94,28 +111,32 @@ def get_movie_bytitle():
 @app.route("/movies/<movieid>", methods=['POST'])
 @admin_required
 def add_movie(movieid):
-    req = request.get_json()
-
-    for movie in movies:
-        if str(movie["id"]) == str(movieid):
-            print(movie["id"])
-            print(movieid)
-            return make_response(jsonify({"error":"movie ID already exists"}),500)
-
-    movies.append(req)
-    write(movies)
+    req = request.get_json(silent=True)
+    if not isinstance(req, dict) or str(req.get("id")) != str(movieid):
+        return make_response(jsonify({"error": "movie body id must match URL id"}), 400)
+    try:
+        collection.insert_one(req)
+    except DuplicateKeyError:
+        return make_response(jsonify({"error": "movie ID already exists"}), 500)
     res = make_response(jsonify({"message":"movie added"}),200)
     return res
 
 @app.route("/movies/<movieid>/<rate>", methods=['PUT'])
 @admin_required
 def update_movie_rating(movieid, rate):
-    for movie in movies:
-        if str(movie["id"]) == str(movieid):
-            movie["rating"] = rate
-            res = make_response(jsonify(movie),200)
-            write(movies)
-            return res
+    try:
+        rating = float(rate)
+    except ValueError:
+        return make_response(jsonify({"error": "rating must be numeric"}), 400)
+    movie = collection.find_one_and_update(
+        {"id": str(movieid)},
+        {"$set": {"rating": rating}},
+        return_document=ReturnDocument.AFTER,
+        projection={"_id": 0},
+    )
+    if movie is not None:
+        res = make_response(jsonify(movie), 200)
+        return res
 
     res = make_response(jsonify({"error":"movie ID not found"}),500)
     return res
@@ -123,29 +144,32 @@ def update_movie_rating(movieid, rate):
 @app.route("/movies/<movieid>", methods=['DELETE'])
 @admin_required
 def del_movie(movieid):
-    for movie in movies:
-        if str(movie["id"]) == str(movieid):
-            movies.remove(movie)
-            write(movies)
-            return make_response(jsonify(movie),200)
+    movie = collection.find_one_and_delete(
+        {"id": str(movieid)}, projection={"_id": 0}
+    )
+    if movie is not None:
+        return make_response(jsonify(movie), 200)
 
     res = make_response(jsonify({"error":"movie ID not found"}),500)
     return res
 
 # graphql entry points
 @app.route('/graphql', methods=['POST'])
+@jwt_required()
 def graphql_server():
     data = request.get_json()
     success, result = graphql_sync(
                         schema,
                         data,
-                        context_value=None,
+                        context_value={
+                            "movies_collection": collection,
+                            "actors_collection": actors_collection,
+                        },
                         debug=app.debug
                     )
     status_code = 200 if success else 400
     return jsonify(result), status_code
 
 if __name__ == "__main__":
-    #p = sys.argv[1]
     print("Server running in port %s"%(PORT))
     app.run(host=HOST, port=PORT)
